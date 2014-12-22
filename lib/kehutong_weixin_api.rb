@@ -44,8 +44,7 @@ module Kehutong
     end
 
     def _oauth_get_open_id(code)
-      RestClient.get("https://api.weixin.qq.com/sns/oauth2/access_token?\
-                                appid=#{@app_id}&secret=SECRET&code=#{code}&grant_type=authorization_code") do |response|
+      RestClient.get("https://api.weixin.qq.com/sns/oauth2/access_token?appid=#{@app_id}&secret=#{@app_secret}&code=#{code}&grant_type=authorization_code") do |response|
         MultiJson.load(response)['open_id']
       end
     end
