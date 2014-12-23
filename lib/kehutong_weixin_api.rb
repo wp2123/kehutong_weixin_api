@@ -75,7 +75,7 @@ module Kehutong
       qrcode_data = {"action_name" => action_name, "action_info" => {"scene" => {"scene_id" => scene_id}}}
       qrcode_data.merge!({"expire_seconds" => 1800}) if "QR_SCENE" == action_name
       request_to_weixin {
-        RestClient.post("https://api.weixin.qq.com/cgi-bin/qrcode/create?access_token=#{@@access_token}", qrcode_data.to_json)
+        RestClient.post("https://api.weixin.qq.com/cgi-bin/qrcode/create?access_token=#{@@access_token}", qrcode_data.to_json, :content_type => :json)
       }
     end
 
