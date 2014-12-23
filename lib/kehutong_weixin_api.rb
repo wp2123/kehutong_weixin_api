@@ -36,6 +36,16 @@ module Kehutong
       _fetch_user_info(open_id)
     end
 
+    #To generate temporary qrcode
+    def generate_temporary_qrcode(scene_id)
+      _generate_qrcode(scene_id, 'QR_SCENE')
+    end
+
+    #To generate forever qrcode
+    def generate_forever_qrcode(scene_id)
+      _generate_qrcode(scene_id, 'QR_LIMIT_SCENE')
+    end
+
     private
 
     def _validate?(params)
@@ -45,7 +55,7 @@ module Kehutong
 
     def _oauth_get_open_id(code)
       RestClient.get("https://api.weixin.qq.com/sns/oauth2/access_token?appid=#{@app_id}&secret=#{@app_secret}&code=#{code}&grant_type=authorization_code") do |response|
-        MultiJson.load(response)['open_id']
+        MultiJson.load(response)['openid']
       end
     end
 
@@ -64,6 +74,20 @@ module Kehutong
     def _fetch_access_token
       RestClient.get("https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=#{@app_id}&secret=#{@app_secret}") do |response|
         @@access_token = MultiJson.load(response)['access_token']
+      end
+    end
+
+    def _generate_qrcode(scene_id, action_name)
+      qrcode_data = {"action_name" => action_name, "action_info" => {"scene" => {"scene_id" => scene_id}}}
+      qrcode_data.merge!({"expire_seconds" => 1800}) if "QR_SCENE" == action_name
+      RestClient.post("https://api.weixin.qq.com/cgi-bin/qrcode/create?access_token=#{@@access_token}", qrcode_data) do |response|
+        response_json = MultiJson.load(response)
+        if ACCESS_TOKEN_ERRCODES.include?(response_json['errcode'])
+          _fetch_access_token
+          _generate_qrcode(scene_id, action_name) if @@access_token
+        else
+          response_json
+        end
       end
     end
   end
