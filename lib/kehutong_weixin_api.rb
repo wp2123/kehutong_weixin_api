@@ -60,15 +60,9 @@ module Kehutong
     end
 
     def _fetch_user_info(open_id)
-      RestClient.get("https://api.weixin.qq.com/cgi-bin/user/info?access_token=#{@@access_token}&openid=#{open_id}&lang=zh_CN") do |response|
-        response_json = MultiJson.load(response)
-        if ACCESS_TOKEN_ERRCODES.include?(response_json['errcode'])
-          _fetch_access_token
-          _fetch_user_info(open_id) if @@access_token
-        else
-          response_json
-        end
-      end
+      request_to_weixin {
+        RestClient.get("https://api.weixin.qq.com/cgi-bin/user/info?access_token=#{@@access_token}&openid=#{open_id}&lang=zh_CN")
+      }
     end
 
     def _fetch_access_token
@@ -80,14 +74,18 @@ module Kehutong
     def _generate_qrcode(scene_id, action_name)
       qrcode_data = {"action_name" => action_name, "action_info" => {"scene" => {"scene_id" => scene_id}}}
       qrcode_data.merge!({"expire_seconds" => 1800}) if "QR_SCENE" == action_name
-      RestClient.post("https://api.weixin.qq.com/cgi-bin/qrcode/create?access_token=#{@@access_token}", qrcode_data) do |response|
-        response_json = MultiJson.load(response)
-        if ACCESS_TOKEN_ERRCODES.include?(response_json['errcode'])
-          _fetch_access_token
-          _generate_qrcode(scene_id, action_name) if @@access_token
-        else
-          response_json
-        end
+      request_to_weixin {
+        RestClient.post("https://api.weixin.qq.com/cgi-bin/qrcode/create?access_token=#{@@access_token}", qrcode_data.to_json)
+      }
+    end
+
+    def request_to_weixin
+      response_json = MultiJson.load(yield)
+      if ACCESS_TOKEN_ERRCODES.include?(response_json['errcode'])
+        _fetch_access_token
+        MultiJson.load(yield) if @@access_token
+      else
+        response_json
       end
     end
   end
